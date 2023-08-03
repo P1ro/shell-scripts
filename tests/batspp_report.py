@@ -311,6 +311,7 @@ def main():
                 count_ok = len([item for item in output_lines_filtered if item.startswith("ok")])
                 count_bad = len([item for item in output_lines_filtered if item.startswith("not ok")])
                 count_total = (count_ok + count_bad)
+
                 success_rate = (round((count_ok / count_total)*100, 2) if count_total else 0)
                 min_score = system.to_float(thresholds.get(ipynb_from_batspp, DEFAULT_MIN_SCORE))
                 successful = (success_rate >= min_score)
@@ -371,13 +372,22 @@ def main():
     print(f"No. of AVOIDED testfiles: {avoid_count}")
     print(f"Total no. of good tests: {total_count_ok}")
     print(f"Total no. of individual tests: {total_count_total}")
+    
     # Note: macro-average is mean of success score, whereas micro-average is based on global counts.
     # See https://datascience.stackexchange.com/questions/15989/micro-average-vs-macro-average-performance-in-a-multiclass-classification-settin
     avg_successful = macro_success_rate = micro_success_rate = NaN
+    ## OLD: Returns ZeroDivison error if a faulty file passes by
+    # if batspp_count:
+    #     avg_successful = total_num_successful / batspp_count * 100
+    #     macro_success_rate = total_success_rate / batspp_count
+    #     micro_success_rate = total_count_ok / total_count_total * 100
+    
     if batspp_count:
         avg_successful = total_num_successful / batspp_count * 100
         macro_success_rate = total_success_rate / batspp_count
+    if total_count_total:
         micro_success_rate = total_count_ok / total_count_total * 100
+
     print(f"Total no. files OK w/ threshold: {total_num_successful}")
     print(f"Average no. files OK / threshold: {system.round_num(avg_successful)}%")
     print(f"Macro success score: {system.round_num(macro_success_rate)}%")
