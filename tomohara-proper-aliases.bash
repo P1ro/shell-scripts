@@ -35,6 +35,8 @@ function convert-emoticons-aux {
     }
 
 
+#...............................................................................
+
 # Python stuff
 ## OLD: alias plint=python-lint
 simple-alias-fn plint 'PAGER=cat python-lint'
@@ -44,7 +46,8 @@ alias-fn plint-torch 'plint "$@" | grep -v "torch.*no-member"'
 function clone-repo () {
     local url repo log
     url="$1"
-    repo=$(basename "$url")
+    ## OLD: repo=$(basename "$url")
+    repo=$(basename "$url" .git)
     log="_clone-$repo-$(T).log"
     ## OLD: command script "$log" git clone "$url"
     # maldito linux: -c option required for command for
@@ -61,6 +64,38 @@ function clone-repo () {
     echo "FYI: script-based clone done (see $log)" 1>&2
 }
 simple-alias-fn black-plain 'convert-emoticons-aux black'
+
+# run-python-script(script, args): run SCRIPT with ARGS with output to _base-#.out
+# and stderr to _base-#.log where # is value of global $_PSL_.
+# note: Checks for errors afterwards.
+function run-python-script {
+    ## DEBUG: trace-vars _PSL_ out_base log
+    if [ "$1" = "" ]; then
+        echo "Usage: $0 script arg ..."
+        return
+    fi
+    # Check args
+    local script_path="$1";
+    shift;
+    local script_args="$*";
+    local script_base
+    script_base=$(basename-with-dir "$script_path" .py);
+    #
+    # Run script and check for errors
+    let _PSL_++;
+    local out_base
+    out_base="$script_base.$(TODAY).$_PSL_";
+    local log="$out_base.log";
+    ## DEBUG: trace-vars _PSL_ out_base log
+    # TODO2: fix _PSL_ value retention
+    _PSL_=666; command rm -v "$out_base.out" "$log";
+    # shellcheck disable=SC2086
+    echo "$script_args" | DEBUG_LEVEL=4 $PYTHON "$script_path" - > "$out_base.out" 2> "$log";
+    check-errors-excerpt "$log";
+    tail "$log" "$out_base.out"
+}
+
+#...............................................................................
 
 # JSON stuff
 function json-validate () {
@@ -89,6 +124,23 @@ function shell-check-last-snippet {
     # shellcheck disable=SC2002
     cat "$1" | perl -0777 -pe 's/^.*\$:\s*\{(.*)\n\s*\}\s*[^\{]*$/$1\n/s;' | shell-check --shell=bash -;
 }
+#
+# shell-check-stdin(): run shell-check over stdin
+function shell-check-stdin {
+    ## DEBUG: echo "in shell-check-stdin: args='$*'"
+    ## BAD:
+    ## local snippet
+    ## read -d . -p $'Enter snippet lines with single . on end line\n' snippet
+    ## ## DEBUG: echo "$snippet"
+    ## trace-vars snippet
+    ## shell-check - <<<"$snippet"
+    ## DEBUG: cat <<<"$snippet"
+    ## echo "out shell-check-stdin"
+    echo "Enter snippet lines and then ^D"
+    python -c 'import sys; sys.stdin.read()' | shell-check -
+    if [ "$?" -eq 0 ]; then echo "shellcheck OK"; fi
+}
+
 # tabify(text): convert spaces in TEXT to tabs
 # TODO: account for quotes
 function tabify {
@@ -125,7 +177,12 @@ function trace-array-vars {
     echo
 }
 
-
+# remote-prompt([prompt="_nickname[0]"@]): set prompt to _N@ where N is first letter of host nickname
+function remote-prompt {
+    local prompt="$1"
+    if [ "$prompt" = "" ]; then prompt="_$(echo "$HOST_NICKNAME" | perl -pe 's/^(.).*/$1/;')@"; fi
+    reset-prompt "$prompt"
+}
 
 #...............................................................................
 # Organizer stuff
@@ -219,8 +276,32 @@ alias-fn ps-time 'LINES=1000 COLUMNS=256 ps_sort.perl -time2num -num_times=1 -by
 # options: -d -RR: reattach a session and if necessary detach or create it
 alias-fn screen-reattach 'screen -d -RR'
 
+# sleep-for(seconds, [message]): sleep for SECONDS with MESSAGE ("delay for Ns")
+function sleep-for {
+    local sec="$1"
+    local msg="${2:-"delay for ${sec}s"}"
+    echo "$msg"
+    sleep "$sec"
+}
+
+#...............................................................................
+# Emacs related
+
+# reset-under-emacs: clear settings added for Bash under emacs
+# note: for use in external terminal invoked under Emacs term (e.g., via gterm)
+function reset-under-emacs {
+    unset UNDER_EMACS SCRIPT_PID
+    all-tomohara-settings
+}
+
 #................................................................................
 # Idiosyncratic stuff (n.b., doubly so given "tomohara-proper" part of filename)
-alias all-tomohara-settings='tomohara-aliases; tomohara-settings; more-tomohara-aliases; tomohara-proper-aliases'
+# note: although 'kill-it xyz' is not hard to type 'kill-xyz' allows for tab completion
+#
+## OLD: alias all-tomohara-settings='tomohara-aliases; tomohara-settings; more-tomohara-aliases; tomohara-proper-aliases'
+alias all-tomohara-aliases='source $TOM_BIN/all-tomohara-aliases-etc.bash'
+alias all-tomohara-settings='all-tomohara-aliases; tomohara-settings'
+#
 alias kill-kdiff3='kill-it kdiff3'
 alias kill-firefox='kill-it firefox'
+alias kill-jupyter='kill-it jupyter'
