@@ -41,11 +41,16 @@ append-path "$PERLLIB"
 append-path "$HOME/python"
 append-path "$TOM_BIN/adhoc"
 append-path "$TOM_BIN/examples"
+append-path-warn "$HOME/.local/bin"
 # Put current directoy at end of path; can be overwritting with ./ prefix
 export PATH="$PATH:."
+
 # Note: ~/lib only used to augment existing library, not pre-empt
 ## OLD: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/lib:$HOME/lib/linux
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$HOME/lib:$HOME/lib/$OSTYPE_BRIEF"
+
+# Setup pythonpath to include .. for sake of testing
+export PYTHONPATH="$PYTHONPATH:.."
 
 # Define HOST_NICKNAME from ~/.host-nickname if unset or the default
 if [[ ("$HOST_NICKNAME" = "") || ("$HOST_NICKNAME" = "tpo-host") ]]; then
@@ -65,6 +70,10 @@ if [ -e "$HOME/mezcla-tom" ]; then add-python-path "$HOME/mezcla-tom"; fi
 # Make sure gradio apps accessible in local net
 # See https://superuser.com/questions/949428/whats-the-difference-between-127-0-0-1-and-0-0-0-0.
 export GRADIO_SERVER_NAME=0.0.0.0
+#
+# Mezcla stuff
+export BRIEF_USAGE=1
+export TRACE_INVOCATION=1
 
 # Enable timestamp preservation during git-update alias operations (n.b., stash pop quirk)
 export PRESERVE_GIT_STASH=1

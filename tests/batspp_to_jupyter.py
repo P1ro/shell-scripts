@@ -10,6 +10,8 @@
 ## 1. Generalize the script
 ## 2. Convert to a class based approach
 ## 3. Set the default kernel to bash_kernel
+##
+## Author: Aviyan Acharya
 
 # Standard Libraries
 import os
